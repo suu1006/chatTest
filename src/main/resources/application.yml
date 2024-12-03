@@ -1,0 +1,18 @@
+spring:
+  jpa:
+    database: mysql
+    hibernate.ddl-auto: update
+    show-sql: true
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/study?serverTimezone=Asia/Seoul
+    username: root
+    password: jeongsu97!
+
+# ??? ??? ??
+kakao:
+    client :
+      id : fdb73a2a7073e7cc0952e1ef38663194 # rest api ?
+      secret : WBtN1uZmuaqN1yhnzNoLrLRuiVgjgIHN # client secret ?
+    redirect :
+      uri : http://localhost:8080/callback # redirect url
