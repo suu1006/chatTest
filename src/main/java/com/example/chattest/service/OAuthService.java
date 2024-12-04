@@ -2,18 +2,30 @@ package com.example.chattest.service;
 
 import com.example.chattest.domain.KakaoTokenResponseDTO;
 import com.example.chattest.domain.KakaoUserInfoResponseDto;
+import com.example.chattest.domain.User;
+import com.example.chattest.domain.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -24,9 +36,12 @@ public class OAuthService {
     private final String KAUTH_TOKEN_URL_HOST;
     private final String KAUTH_USER_URL_HOST;
 
+    private final UserRepository userRepository;
+
     @Autowired
-    public OAuthService(@Value("${kakao.client.id}") String clientId) {
+    public OAuthService(@Value("${kakao.client.id}") String clientId, UserRepository userRepository) {
         this.clientId = clientId;
+        this.userRepository = userRepository;
         KAUTH_TOKEN_URL_HOST ="https://kauth.kakao.com";
         KAUTH_USER_URL_HOST = "https://kapi.kakao.com";
     }
@@ -47,8 +62,6 @@ public class OAuthService {
 
         log.info(" [Kakao Service] Access Token ------> {}", kakaoTokenResponseDto.getAccessToken());
         log.info(" [Kakao Service] Refresh Token ------> {}", kakaoTokenResponseDto.getRefreshToken());
-        log.info(" [Kakao Service] Id Token ------> {}", kakaoTokenResponseDto.getIdToken());
-        log.info(" [Kakao Service] Scope ------> {}", kakaoTokenResponseDto.getScope());
 
         return kakaoTokenResponseDto.getAccessToken();
 
@@ -67,8 +80,6 @@ public class OAuthService {
                 .bodyToMono(KakaoUserInfoResponseDto.class)
                 .block();
 
-        System.out.println("userInfo: " + userInfo);
-
         if (userInfo != null && userInfo.getKakaoAccount() != null) {
             String email = userInfo.getKakaoAccount().getEmail();
             System.out.println("Email: " + email);
@@ -78,6 +89,18 @@ public class OAuthService {
 
         return userInfo;
     }
+
+    public void join(User user) {
+        user.setRole("ROLE_USER");
+        String rawPassword = user.getPassword();
+        String encPassword = new BCryptPasswordEncoder().encode(rawPassword);
+        user.setPassword(encPassword);
+
+        userRepository.save(user);
+    }
+
+
+
 
 
 

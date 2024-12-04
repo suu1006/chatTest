@@ -1,20 +1,19 @@
 package com.example.chattest.controller;
 
+import com.example.chattest.common.auth.JwtTokenProvider;
+import com.example.chattest.domain.AuthResponse;
 import com.example.chattest.domain.KakaoUserInfoResponseDto;
+import com.example.chattest.domain.User;
 import com.example.chattest.service.OAuthService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @Controller
@@ -22,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class OAuthController {
 
     private final OAuthService oauthService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Value("${kakao.client.id}")
     String clientId;
@@ -47,23 +47,54 @@ public class OAuthController {
     /**
      * 카카오 로그인 페이지
      * @param model
-     * @return
+     * @return 302 Redirect -> 인가코드 발급
      */
-    @GetMapping("/login/page")
+    @GetMapping("/kkoLogin/page")
     public String loginPage(Model model) {
         String location = KAKAO_AUTH_URI + "/oauth/authorize?response_type=code&client_id=" + clientId + "&redirect_uri=" + redirectUri;
         model.addAttribute("location", location);
         return "login";
     }
 
+    /**
+     * Redirect 후 유저정보 조회
+     * @param code
+     * @return
+     */
     @GetMapping("/callback")
-    public ResponseEntity<?> callback(@RequestParam("code") String code) {
+    public ResponseEntity<?> callback(@RequestParam("code") String code) throws JsonProcessingException {
+        // 1. access token 발급
         String accessToken = oauthService.getAccessToken(code);
-        System.out.println("accessToken: " + accessToken);
+        log.info("accessToken: {}", accessToken);
+
+        // 2. 사용자 정보 가져오기
         KakaoUserInfoResponseDto userInfo = oauthService.getUserInfo(accessToken);
-        System.out.println("userInfo: " + userInfo);
-        return new ResponseEntity<>(code, HttpStatus.OK);
+        String userId = String.valueOf(userInfo.getId());
+        log.info("userId: {}", userId);
+
+        // 3. jwt 토큰 발급
+        String jwtToken = jwtTokenProvider.createToken(userId, "ROLE_USER");
+        log.info("jwtToken: {} " , jwtToken);
+
+        return ResponseEntity.ok(new AuthResponse(jwtToken));
     }
 
+    @PostMapping("/join")
+    public String join(User user) {
+        log.info("user: {}", user);
+        oauthService.join(user);
+        return "redirect:/loginForm";
+    }
 
+//    @PostMapping("/login")
+//    public ResponseEntity<?> login(@RequestBody Map<String, String> request) {
+//        // Oauth 인증 완료 후
+//        String email = request.get("email");
+//        List<String> roles = List.of("ROLE_USER"); // 기본 권한
+//
+//        String token = jwtTokenProvider.getEmailFromToken(email);
+//        return ResponseEntity.ok(new HashMap<>(){{
+//            put("token", token);
+//        }});
+//    }
 }
