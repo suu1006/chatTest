@@ -7,6 +7,7 @@ import com.example.chattest.domain.User;
 import com.example.chattest.service.OAuthService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
@@ -14,6 +15,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta. servlet. http. Cookie;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
 @Slf4j
 @Controller
@@ -49,7 +55,7 @@ public class OAuthController {
      * @param model
      * @return 302 Redirect -> 인가코드 발급
      */
-    @GetMapping("/kkoLogin/page")
+    @GetMapping("/login/page")
     public String loginPage(Model model) {
         String location = KAKAO_AUTH_URI + "/oauth/authorize?response_type=code&client_id=" + clientId + "&redirect_uri=" + redirectUri;
         model.addAttribute("location", location);
@@ -62,7 +68,7 @@ public class OAuthController {
      * @return
      */
     @GetMapping("/callback")
-    public ResponseEntity<?> callback(@RequestParam("code") String code) throws JsonProcessingException {
+    public String callback(@RequestParam("code") String code, HttpServletResponse response) throws IOException {
         // 1. access token 발급
         String accessToken = oauthService.getAccessToken(code);
         log.info("accessToken: {}", accessToken);
@@ -73,10 +79,10 @@ public class OAuthController {
         log.info("userId: {}", userId);
 
         // 3. jwt 토큰 발급
-        String jwtToken = jwtTokenProvider.createToken(userId, "ROLE_USER");
-        log.info("jwtToken: {} " , jwtToken);
+        String jwtToken = jwtTokenProvider.createToken(userId, "USER");
+        log.info("jwtToken: {}", jwtToken);
 
-        return ResponseEntity.ok(new AuthResponse(jwtToken));
+        return "/home";
     }
 
     @PostMapping("/join")
@@ -86,15 +92,8 @@ public class OAuthController {
         return "redirect:/loginForm";
     }
 
-//    @PostMapping("/login")
-//    public ResponseEntity<?> login(@RequestBody Map<String, String> request) {
-//        // Oauth 인증 완료 후
-//        String email = request.get("email");
-//        List<String> roles = List.of("ROLE_USER"); // 기본 권한
-//
-//        String token = jwtTokenProvider.getEmailFromToken(email);
-//        return ResponseEntity.ok(new HashMap<>(){{
-//            put("token", token);
-//        }});
-//    }
+    @GetMapping("/home")
+    public String homePage() {
+        return "home";
+    }
 }

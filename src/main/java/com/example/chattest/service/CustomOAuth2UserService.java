@@ -34,7 +34,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         User user = userRepository.findByEmail(email).orElseGet(()-> userRepository.save(User.builder()
                 .email(email)
                 .username(oAuth2User.getAttribute("name"))
-                .role("ROLE_USER")
+                .role("USER")
                 .build()));
 
         return new DefaultOAuth2User((Collections.singleton(new SimpleGrantedAuthority(user.getRole()))), oAuth2User.getAttributes(), "email");

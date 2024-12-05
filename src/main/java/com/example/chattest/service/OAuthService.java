@@ -82,11 +82,10 @@ public class OAuthService {
 
         if (userInfo != null && userInfo.getKakaoAccount() != null) {
             String email = userInfo.getKakaoAccount().getEmail();
-            System.out.println("Email: " + email);
+            log.info("Email: {}" , email);
         } else {
-            System.out.println("Email not available or kakaoAccount is null");
+            log.error("Email not available or kakaoAccount is null");
         }
-
         return userInfo;
     }
 

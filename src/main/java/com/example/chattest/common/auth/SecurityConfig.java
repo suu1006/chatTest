@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.springframework.beans.propertyeditors.CustomNumberEditor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -24,6 +26,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+
+import static com.nimbusds.jose.shaded.gson.internal.$Gson$Types.arrayOf;
 
 @Configuration
 @EnableWebSecurity
@@ -39,14 +43,23 @@ public class SecurityConfig{
         return new BCryptPasswordEncoder();
     }
 
+    String[] staticResources  =  {
+            "/css/**",
+            "/images/**",
+            "/fonts/**",
+            "/scripts/**",
+    };
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         // CSRF 비활성화
-        http.csrf(csrf -> csrf.disable());
+        http.csrf(AbstractHttpConfigurer::disable);
 
         // 인증 없이 접근할 URL 설정
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/kkoLogin/page", "/callback").permitAll()  // 인증 없이 접근 허용
+                .requestMatchers(staticResources).permitAll()
+                .requestMatchers("/login/page", "/callback").permitAll()  // 인증 없이 접근 허용
+                .requestMatchers("/home").hasRole("USER")  // USER 권한 필요
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")  // ADMIN 권한 필요
                 .anyRequest().authenticated()  // 나머지 모든 요청은 인증 필요
         );
