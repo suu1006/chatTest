@@ -56,12 +56,17 @@ public class SecurityConfig{
         http.csrf(AbstractHttpConfigurer::disable);
 
         // 인증 없이 접근할 URL 설정
+//        http.authorizeHttpRequests(auth -> auth
+//                .requestMatchers(staticResources).permitAll()
+//                .requestMatchers("/login/page", "/callback").permitAll()  // 인증 없이 접근 허용
+//                .requestMatchers("/home").hasRole("USER")  // USER 권한 필요
+//                .requestMatchers("/api/admin/**").hasRole("ADMIN")  // ADMIN 권한 필요
+//                .anyRequest().authenticated()  // 나머지 모든 요청은 인증 필요
+//        );
+
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(staticResources).permitAll()
-                .requestMatchers("/login/page", "/callback").permitAll()  // 인증 없이 접근 허용
-                .requestMatchers("/home").hasRole("USER")  // USER 권한 필요
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")  // ADMIN 권한 필요
-                .anyRequest().authenticated()  // 나머지 모든 요청은 인증 필요
+                .anyRequest().permitAll() // 모든 요청 인증 없이 허용
         );
 
         // JWT 인증 필터 추가

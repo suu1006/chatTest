@@ -8,12 +8,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.codec.http.HttpHeaderValues;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -21,10 +24,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.util.List;
 
 @Slf4j
@@ -46,6 +53,11 @@ public class OAuthService {
         KAUTH_USER_URL_HOST = "https://kapi.kakao.com";
     }
 
+    /**
+     * 토큰받기
+     * @param code
+     * @return
+     */
     public String getAccessToken(String code){
         KakaoTokenResponseDTO kakaoTokenResponseDto = WebClient.create(KAUTH_TOKEN_URL_HOST).post()
                 .uri(uriBuilder -> uriBuilder
@@ -64,9 +76,46 @@ public class OAuthService {
         log.info(" [Kakao Service] Refresh Token ------> {}", kakaoTokenResponseDto.getRefreshToken());
 
         return kakaoTokenResponseDto.getAccessToken();
-
     }
 
+    /**
+     * 로그아웃
+     * @param accessToken
+     */
+    public void logout(String accessToken) {
+        WebClient.create("https://kapi.kakao.com")
+                .post()
+                .uri("/v1/user/logout")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .retrieve()
+                .bodyToMono(String.class)
+                .doOnSuccess(response -> log.info("Kakao logout success: {}", response))
+                .doOnError(error -> log.error("Kakao logout failed", error))
+                .block();
+    }
+
+
+
+    /**
+     * 서비스 약관 동의 내역 확인하기
+     */
+    public User getUserServiceTerms(String accessToken) {
+        WebClient.create("https://kapi.kakao.com")
+                .get()
+                .uri(uriBuilder -> uriBuilder.path("/v1/user/service/terms").build())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+        return null;
+    }
+
+
+    /**
+     * 사용자 정보 가져오기
+     * @param accessToken
+     * @return
+     */
     public KakaoUserInfoResponseDto getUserInfo(String accessToken) {
         KakaoUserInfoResponseDto userInfo = WebClient.create(KAUTH_USER_URL_HOST)
                 .get()
@@ -88,6 +137,37 @@ public class OAuthService {
         }
         return userInfo;
     }
+
+    /**
+     * 카카오 로그아웃
+     * @param user
+     */
+//    public void kakaoLogout(String access_Token) {
+//        String reqURL = "https://kapi.kakao.com/v1/user/logout";
+//        try {
+//            URL url = new URL(reqURL);
+//            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+//            conn.setRequestMethod("POST");
+//            conn.setRequestProperty("Authorization", "Bearer " + access_Token);
+//
+//            int responseCode = conn.getResponseCode();
+//            System.out.println("responseCode : " + responseCode);
+//
+//            BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+//
+//            String result = "";
+//            String line = "";
+//
+//            while ((line = br.readLine()) != null) {
+//                result += line;
+//            }
+//            System.out.println(result);
+//        } catch (IOException e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
+//        }
+//    }
+
 
     public void join(User user) {
         user.setRole("ROLE_USER");

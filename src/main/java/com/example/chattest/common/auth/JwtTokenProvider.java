@@ -34,12 +34,13 @@ public class JwtTokenProvider {
         Date validity = new Date(now.getTime() + validityInMilliseconds);
 
         return Jwts.builder()
-                .setClaims(claims)
-                .setIssuedAt(now)
-                .setExpiration(validity)
-                .signWith(Keys.hmacShaKeyFor(secretKey.getBytes()))
+                .setClaims(claims) // 데이터
+                .setIssuedAt(now) // 발행일자
+                .setExpiration(validity) // 만료기간
+                .signWith(Keys.hmacShaKeyFor(secretKey.getBytes())) // secret 값
                 .compact();
     }
+
 
     // JWT 유효성 검증
     public boolean validateToken(String token) {

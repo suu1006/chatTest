@@ -62,6 +62,20 @@ public class OAuthController {
         return "login";
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@RequestHeader("Authorization") String bearerToken) {
+        String accessToken = bearerToken.replace("Bearer ", "");
+
+        // 카카오 로그아웃 처리
+        oauthService.logout(accessToken);
+
+        // 서버 토큰 무효화 처리
+        //oauthService.invalidateToken(accessToken);
+
+        return ResponseEntity.ok("logout success");
+
+    }
+
     /**
      * Redirect 후 유저정보 조회
      * @param code
@@ -82,6 +96,10 @@ public class OAuthController {
         String jwtToken = jwtTokenProvider.createToken(userId, "USER");
         log.info("jwtToken: {}", jwtToken);
 
+        // 사용자가 동의한 서비스 약관 확인 -> 사업자등록번호 필요
+//        User userServiceTerms = oauthService.getUserServiceTerms(accessToken);
+//        log.info("userServiceTerms: {}", userServiceTerms);
+
         return "/home";
     }
 
@@ -96,4 +114,7 @@ public class OAuthController {
     public String homePage() {
         return "home";
     }
+
+
+
 }
