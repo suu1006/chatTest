@@ -67,6 +67,16 @@ public class SecurityConfig{
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(staticResources).permitAll()
                 .anyRequest().permitAll() // 모든 요청 인증 없이 허용
+
+        );
+
+        // 로그아웃 설정 추가
+        http.logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/login/page")
+                .invalidateHttpSession(true) // 세션 무효화
+                .deleteCookies("JSESSIONID") // JSESSIONID 쿠키 삭제
+                .permitAll()
         );
 
         // JWT 인증 필터 추가

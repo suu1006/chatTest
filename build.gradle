@@ -44,6 +44,10 @@ dependencies {
 
     compileOnly 'javax.servlet:javax.servlet-api:4.0.1'
 
+    runtimeOnly 'io.netty:netty-resolver-dns-native-macos:4.1.115.Final:osx-aarch_64'
+
+
+
 }
 
 tasks.named('test') {

@@ -62,18 +62,16 @@ public class OAuthController {
         return "login";
     }
 
+    /**
+     * 로그아웃
+     * @param bearerToken
+     * @return
+     */
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(@RequestHeader("Authorization") String bearerToken) {
+    public String logout(@RequestHeader("Authorization") String bearerToken) {
         String accessToken = bearerToken.replace("Bearer ", "");
-
-        // 카카오 로그아웃 처리
         oauthService.logout(accessToken);
-
-        // 서버 토큰 무효화 처리
-        //oauthService.invalidateToken(accessToken);
-
-        return ResponseEntity.ok("logout success");
-
+        return "redirect:/login/page";
     }
 
     /**
@@ -96,13 +94,18 @@ public class OAuthController {
         String jwtToken = jwtTokenProvider.createToken(userId, "USER");
         log.info("jwtToken: {}", jwtToken);
 
-        // 사용자가 동의한 서비스 약관 확인 -> 사업자등록번호 필요
-//        User userServiceTerms = oauthService.getUserServiceTerms(accessToken);
+        // 4. 사용자가 동의한 서비스 약관 -> 카카오 싱크 심사 후 사용 가능
+//        String userServiceTerms = oauthService.getUserServiceTerms(accessToken);
 //        log.info("userServiceTerms: {}", userServiceTerms);
 
         return "/home";
     }
 
+    /**
+     * 회원가입
+     * @param user
+     * @return
+     */
     @PostMapping("/join")
     public String join(User user) {
         log.info("user: {}", user);

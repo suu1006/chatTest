@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -32,7 +33,9 @@ import reactor.core.publisher.Mono;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -99,15 +102,15 @@ public class OAuthService {
     /**
      * 서비스 약관 동의 내역 확인하기
      */
-    public User getUserServiceTerms(String accessToken) {
-        WebClient.create("https://kapi.kakao.com")
+    public String getUserServiceTerms(String accessToken) {
+        String userAgreeDetails = WebClient.create("https://kapi.kakao.com")
                 .get()
-                .uri(uriBuilder -> uriBuilder.path("/v1/user/service/terms").build())
+                .uri(uriBuilder -> uriBuilder.path("/v2/user/service/terms").build())
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
-        return null;
+        return userAgreeDetails;
     }
 
 
@@ -140,33 +143,25 @@ public class OAuthService {
 
     /**
      * 카카오 로그아웃
-     * @param user
+     * @param
      */
-//    public void kakaoLogout(String access_Token) {
-//        String reqURL = "https://kapi.kakao.com/v1/user/logout";
-//        try {
-//            URL url = new URL(reqURL);
-//            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-//            conn.setRequestMethod("POST");
-//            conn.setRequestProperty("Authorization", "Bearer " + access_Token);
-//
-//            int responseCode = conn.getResponseCode();
-//            System.out.println("responseCode : " + responseCode);
-//
-//            BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-//
-//            String result = "";
-//            String line = "";
-//
-//            while ((line = br.readLine()) != null) {
-//                result += line;
-//            }
-//            System.out.println(result);
-//        } catch (IOException e) {
-//            // TODO Auto-generated catch block
-//            e.printStackTrace();
-//        }
-//    }
+    public void kakaoLogout(String accessToken) {
+        try {
+            WebClient.create(KAUTH_USER_URL_HOST)
+                    .post()
+                    .uri(uriBuilder -> uriBuilder
+                            .scheme("https")
+                            .path("/v1/user/logout")
+                            .build())
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .onErrorResume(e -> Mono.just("Error: " + e.getMessage()));
+        } catch (Exception e) {
+            log.error("Kakao logout failed: {}", e.getMessage());
+        }
+    }
 
 
     public void join(User user) {
